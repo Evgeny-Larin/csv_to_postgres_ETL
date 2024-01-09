@@ -35,7 +35,7 @@ def sql_query(sql, cursor):
     return rows
 
 # функция чтения csv и обработки файла 
-def read_data(path_data, file, done_data, schema, cursor):
+def read_data(path_data, file, done_data, schema, cursor, **context):
     df = pd.read_csv(fr'{path_data}/{file}.csv', sep=';', encoding='cp866', index_col=0, dtype=str)
 
     # получаем список столбцов из таблицы БД
@@ -55,6 +55,9 @@ def read_data(path_data, file, done_data, schema, cursor):
     column_names = [row[0] for row in table_columns]
     df.columns = df.columns.str.lower()
     df = df[column_names]
+
+    # передаём column_names в xcom
+    context['task_instance'].xcom_push(key="column_names", value=column_names)
 
     # находим столбцы с типом данных дата - приводим их к тому же типу в dataframe
     for i in table_columns:
@@ -77,11 +80,35 @@ def read_data(path_data, file, done_data, schema, cursor):
     primary_keys = [row[0] for row in primary_keys]
     df.drop_duplicates(primary_keys, inplace=True)
 
+    # передаём primary_keys в xcom
+    context['task_instance'].xcom_push(key="primary_keys", value=primary_keys)
+
     df.to_csv(f'{done_data}/{file}.csv', sep=';', encoding='utf-8', index=False, header=False)
 
-# функция для загрузки в postgres готовых csv с хуком к 'postgres_conn' 
-def export_data(done_data, file, schema, pg_hook):
-    pg_hook.copy_expert( f"COPY {schema}.{file} FROM STDIN DELIMITER ';'" , f'{done_data}/{file}.csv')
+# функция для загрузки в postgres готовых csv с хуком к 'postgres_conn', при конфликтах перезаписывается 
+def export_data(done_data, file, schema, pg_hook, **context):
+    primary_keys = context['task_instance'].xcom_pull(key="primary_keys", task_ids=f"extr_{file}") # получаем список primary_keys
+    column_names = context['task_instance'].xcom_pull(key="column_names", task_ids=f"extr_{file}") # получаем список column_names
+    update_columns = [c for c in column_names if c not in primary_keys]                            # определяем столбцы, которые будем update
+    update_set = ", ".join([f"{v}=EXCLUDED.{v}" for v in update_columns])                          # подготовка шаблона для запроса
+    primary_keys = ', '.join(primary_keys)
+
+    sql = f"""
+            BEGIN;
+            CREATE TEMPORARY TABLE tmp_table 
+            (LIKE {schema}.{file} INCLUDING DEFAULTS)
+            ON COMMIT DROP;
+                
+            COPY tmp_table FROM STDIN DELIMITER ';';
+                
+            INSERT INTO {schema}.{file}
+            SELECT *
+            FROM tmp_table
+            ON CONFLICT ({primary_keys}) DO UPDATE
+            SET {update_set};
+            COMMIT;
+          """
+    pg_hook.copy_expert(sql, f'{done_data}/{file}.csv')
 
 
 #-----------------#
@@ -118,6 +145,7 @@ for file in files:
     extract_transform_tasks.append(PythonOperator(
                             task_id=f"extr_{file}",
                             dag=dag,
+                            provide_context=True,
                             python_callable=read_data,
                             op_kwargs={
                                 'path_data':path_data,
@@ -130,6 +158,7 @@ for file in files:
     load_tasks.append(PythonOperator(
                             task_id=f"load_{file}",
                             dag=dag,
+                            provide_context=True,
                             python_callable=export_data,
                             op_kwargs={
                                 'file':file,
