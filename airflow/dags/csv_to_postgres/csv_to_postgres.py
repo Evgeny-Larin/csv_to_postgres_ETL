@@ -96,6 +96,8 @@ dag = DAG(dag_id="csv_to_postgres",
           max_active_runs=1,
           default_args=DEFAULT_ARGS)
 
+
+
 # таска, создающая схемы и таблицы, если их нет
 create_tables = PostgresOperator(
     task_id='create_chema_tables',
@@ -107,18 +109,10 @@ create_tables = PostgresOperator(
 
 
 # генератор тасков
-truncate_tables_tasks = []
 extract_transform_tasks = []
 load_tasks = []
 for file in files:
     file = file.replace('.csv', '')
-
-    # таски, очищающие таблицы перед записью
-    truncate_tables_tasks.append(PostgresOperator(
-                            task_id = f'truncate_{file}',
-                            dag = dag,
-                            postgres_conn_id='postgres_conn',
-                            sql = f'TRUNCATE TABLE {schema}.{file}'))
 
     # таски для чтения и обработки csv файлов
     extract_transform_tasks.append(PythonOperator(
@@ -143,7 +137,7 @@ for file in files:
                                 'schema':schema,
                                 'pg_hook':pg_hook}))
     
-    truncate_tables_tasks[-1] >> extract_transform_tasks[-1] >> load_tasks[-1]
+    extract_transform_tasks[-1] >> load_tasks[-1]
 
 
-create_tables >> truncate_tables_tasks
+create_tables >> extract_transform_tasks
