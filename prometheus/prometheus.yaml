@@ -1,0 +1,13 @@
+global:
+  scrape_interval:     5s   # интервал ??
+  evaluation_interval: 15s  # интервал ??
+
+scrape_configs:
+  - job_name: airflow
+    scheme: http
+    metrics_path: metrics
+    static_configs:
+    - targets:               # на этих адресах ловим логи statsd
+      - localhost:9102
+      - docker.host.internal:9102
+      - statsd-exporter:9102
