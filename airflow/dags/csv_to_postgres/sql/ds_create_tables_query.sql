@@ -1,6 +1,5 @@
--- создаём схемы
+-- создаём схему
 create schema if not exists "ds";
-create schema if not exists "logs";
 
 -- создаём таблицы 
 -- остатки средств на счетах
