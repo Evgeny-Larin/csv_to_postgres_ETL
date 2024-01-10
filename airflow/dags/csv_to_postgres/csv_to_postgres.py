@@ -1,14 +1,16 @@
 # импорты Airflow
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.operators.bash import BashOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.operators.dummy_operator import DummyOperator
 from airflow.hooks.postgres_hook import PostgresHook
 
 # прочие импорты
 import pandas as pd
 from datetime import datetime
 import os
+from jinja2 import Template
+
 
 #-----------------#
 
@@ -23,22 +25,47 @@ done_data = r'/opt/airflow/data/csv_to_postgres/done'
 
 # подключение к postgres
 pg_hook = PostgresHook(postgres_conn_id='postgres_conn')
-cursor = pg_hook.get_conn().cursor()
+conn = pg_hook.get_conn()
+cursor = conn.cursor()
 
-# схема для загрузки
+# схема для данных
 schema = 'ds'
 
 # схема для логов
 logs_schema = 'logs'
 logs_table = 'csv_to_postgres_dag'
+logs_record_query = r'sql/logs_record.sql'
+
 
 #-----------------#
+
+
+# функция для записи состояния выполненной таски в логи
+def logs_callback(context):
+    task_instance = context['task_instance'].task_id
+    status = context['task_instance'].state
+    ts = context['task_instance'].execution_date.timestamp()
+    ts = datetime.fromtimestamp(ts).isoformat(sep='T')
+
+    query = f"""
+            INSERT INTO {logs_schema}.{logs_table} (execution_datetime, event_datetime, event_name, event_status)
+            VALUES ('{ts}', '{datetime.now().isoformat(sep='T')}', '{task_instance}', '{status}');
+             """
+
+    pg_hook = PostgresHook(postgres_conn_id='postgres_conn')
+    conn = pg_hook.get_conn()
+    cursor = conn.cursor()
+    cursor.execute(query)
+    conn.commit()
+    conn.close()
+    
 
 
 # функция запросов к БД через курсор
 def sql_query(sql, cursor):
     cursor.execute(sql)
     rows = cursor.fetchall()
+    cursor
     return rows
 
 # функция чтения csv и обработки файла 
@@ -132,14 +159,16 @@ dag = DAG(dag_id="csv_to_postgres",
 
 
 
+#-----------------#
+
+
 # таска, создающая схему ds и таблицы, если их нет
 create_tables_ds = PostgresOperator(
     task_id='create_tables_ds',
     postgres_conn_id='postgres_conn',
     sql=r'sql/ds_create_tables_query.sql',
     autocommit=True,
-    dag=dag
-) 
+    dag=dag) 
 
 # таска, создающая схему logs и таблицы, если их нет
 create_tables_logs = PostgresOperator(
@@ -147,27 +176,17 @@ create_tables_logs = PostgresOperator(
     postgres_conn_id='postgres_conn',
     sql=r'sql/logs_create_tables_query.sql',
     autocommit=True,
-    dag=dag
-) 
+    dag=dag) 
 
-# записываем в логи старт дага
-logs_dag_started = PostgresOperator(
-    task_id='logs_dag_started',
-    postgres_conn_id='postgres_conn',
-    sql=r'sql/logs_record.sql',
-    params={'logs_schema':logs_schema,
-            'logs_table':logs_table,
-            'event_datetime':datetime.now().isoformat(sep='T'),
-            'event_name':'dag_started',
-            'event_status':'complite'},
-    autocommit=True,
-    dag=dag
-) 
+
+logs_etl_started = DummyOperator(
+    task_id='etl_started',
+    dag=dag,
+    on_success_callback=logs_callback) 
 
 
 # генератор тасков
 extract_transform_tasks = []
-logs_ex_tr_tasks = []
 load_tasks = []
 for file in files:
     file = file.replace('.csv', '')
@@ -183,19 +202,9 @@ for file in files:
                                 'file':file,
                                 'done_data':done_data,
                                 'schema':schema,
-                                'cursor':cursor}))
-    
-    logs_ex_tr_tasks.append(PostgresOperator(
-                            task_id=f'logs_extr_{file}',
-                            postgres_conn_id='postgres_conn',
-                            sql=r'sql/logs_record.sql',
-                            params={'logs_schema':logs_schema,
-                                    'logs_table':logs_table,
-                                    'event_datetime':datetime.now().isoformat(sep='T'),
-                                    'event_name':f'extr_{file}',
-                                    'event_status':'complite'},
-                            autocommit=True,
-                            dag=dag))
+                                'cursor':cursor},
+                            on_failure_callback=logs_callback,
+                            on_success_callback=logs_callback))
     
     # таски для записи csv в postgres
     load_tasks.append(PythonOperator(
@@ -207,24 +216,20 @@ for file in files:
                                 'file':file,
                                 'done_data':done_data,
                                 'schema':schema,
-                                'pg_hook':pg_hook}))
+                                'pg_hook':pg_hook},
+                            on_failure_callback=logs_callback,
+                            on_success_callback=logs_callback))
     
-    extract_transform_tasks[-1] >> logs_ex_tr_tasks[-1] >> load_tasks[-1]
+    extract_transform_tasks[-1] >> load_tasks[-1]
 
 # записываем в логи конец дага
-logs_dag_ended = PostgresOperator(
-    task_id='logs_dag_ended',
-    postgres_conn_id='postgres_conn',
-    sql=r'sql/logs_record.sql',
-    params={'logs_schema':logs_schema,
-            'logs_table':logs_table,
-            'event_datetime':datetime.now().isoformat(sep='T'),
-            'event_name':'dag_ended',
-            'event_status':'complite'},
-    autocommit=True,
-    dag=dag
-) 
+logs_etl_ended = DummyOperator(
+    task_id='etl_ended',
+    dag=dag,
+    on_success_callback=logs_callback,
+    trigger_rule='all_done') 
 
-[create_tables_ds, create_tables_logs] >> logs_dag_started >> extract_transform_tasks
 
-load_tasks >> logs_dag_ended
+[create_tables_ds, create_tables_logs] >> logs_etl_started >> extract_transform_tasks
+
+load_tasks >> logs_etl_ended
