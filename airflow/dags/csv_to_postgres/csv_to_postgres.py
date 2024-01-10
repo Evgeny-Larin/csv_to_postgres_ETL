@@ -154,21 +154,16 @@ create_tables_logs = PostgresOperator(
 logs_dag_started = PostgresOperator(
     task_id='logs_dag_started',
     postgres_conn_id='postgres_conn',
-    sql=f"INSERT INTO {logs_schema}.{logs_table} (execution_datetime, event_datetime, event_name, event_status) "+
-         "VALUES ('{{ ts }}'" + f", '{datetime.now().isoformat(sep='T')}', 'dag_started', 'complite')",
+    sql=r'sql/logs_record.sql',
+    params={'logs_schema':logs_schema,
+            'logs_table':logs_table,
+            'event_datetime':datetime.now().isoformat(sep='T'),
+            'event_name':'dag_started',
+            'event_status':'complite'},
     autocommit=True,
     dag=dag
 ) 
 
-# записываем в логи конец дага
-logs_dag_ended = PostgresOperator(
-    task_id='logs_dag_ended',
-    postgres_conn_id='postgres_conn',
-    sql=f"INSERT INTO {logs_schema}.{logs_table} (execution_datetime, event_datetime, event_name, event_status) "+
-         "VALUES ('{{ ts }}'" + f", '{datetime.now().isoformat(sep='T')}', 'dag_ended', 'complite')",
-    autocommit=True,
-    dag=dag
-) 
 
 # генератор тасков
 extract_transform_tasks = []
@@ -193,8 +188,12 @@ for file in files:
     logs_ex_tr_tasks.append(PostgresOperator(
                             task_id=f'logs_extr_{file}',
                             postgres_conn_id='postgres_conn',
-                            sql=f"INSERT INTO {logs_schema}.{logs_table} (execution_datetime, event_datetime, event_name, event_status) "+
-                                "VALUES ('{{ ts }}'" + f", '{datetime.now().isoformat(sep='T')}', 'extr_{file}', 'complite')",
+                            sql=r'sql/logs_record.sql',
+                            params={'logs_schema':logs_schema,
+                                    'logs_table':logs_table,
+                                    'event_datetime':datetime.now().isoformat(sep='T'),
+                                    'event_name':f'extr_{file}',
+                                    'event_status':'complite'},
                             autocommit=True,
                             dag=dag))
     
@@ -212,6 +211,19 @@ for file in files:
     
     extract_transform_tasks[-1] >> logs_ex_tr_tasks[-1] >> load_tasks[-1]
 
+# записываем в логи конец дага
+logs_dag_ended = PostgresOperator(
+    task_id='logs_dag_ended',
+    postgres_conn_id='postgres_conn',
+    sql=r'sql/logs_record.sql',
+    params={'logs_schema':logs_schema,
+            'logs_table':logs_table,
+            'event_datetime':datetime.now().isoformat(sep='T'),
+            'event_name':'dag_ended',
+            'event_status':'complite'},
+    autocommit=True,
+    dag=dag
+) 
 
 [create_tables_ds, create_tables_logs] >> logs_dag_started >> extract_transform_tasks
 
