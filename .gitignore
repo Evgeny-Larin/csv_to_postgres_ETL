@@ -2,4 +2,4 @@
 __pycache__
 .pyc
 airflow_example.cfg
-**/done
+**/done/*.csv
