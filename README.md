@@ -1,22 +1,13 @@
-# Образ airflow
-Запускается в папке с docker-compose командой:  
-`docker compose up`  
+# Проектное задание Full Cycle ETL Engineer
 
-Добавлен Nginx для проксирования запросов к вебсерверу Airflow  
-Nginx вещает с localhost:8080  
+## Порядок установки и запуска
+1. (При работе на Windwos) Устанавить WSL и Ubuntu 22.04
+2. Переключиться на среду Ubuntu
+3. Клонировать репозиторий
+4. **Отредактировать права на чтение и запись для папки data: `chmod -R 777 data`**
+5. Запустить Airflow в папке с docker-compose.yaml командой: `docker compose up`
+6. Войти в веб-интерфейс Airflow по адресу `localhost:8080`. Логин `airflow`, пароль `airflow`
+7. Добавить Connection к БД Postgres с именем `postgres_conn`
+8. Запустить DAG `csv_to_postgres`   
 
-Чтобы дать консольную команду airflow, который запущен через Docker нужно ввести:
-`docker compose run airflow-worker airflow команда`  
-
-В файле .env можно задавать дополнительные переменные окружения  
-
-Планы:
-+ Добавить certbot  
-+ Добавить генерацию fetch_key  
-+ Добавить min.io  
-+ Разобраться как правильно создать админа
-
-Оригинальный compose файл: [ссылка](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html)  
-
-Гайд по добавлению дашбордов: [ссылка](https://www.youtube.com/watch?v=xyeR_uFhnD4&list=PLzKRcZrsJN_xcKKyKn18K7sWu5TTtdywh&index=7) и [ссылка](https://www.youtube.com/watch?v=CZS4fAfWcR4&list=PLzKRcZrsJN_xcKKyKn18K7sWu5TTtdywh&index=7) 
-Гайд по добавлению CI/CD: [ссылка](https://startdatajourney.com/ru/course/apache-airflow-2/modules/22/74/10)
+За основу взят оригинальный docker compose файл: [ссылка](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html)  
