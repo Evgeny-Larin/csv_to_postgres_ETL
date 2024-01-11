@@ -9,7 +9,6 @@ from airflow.hooks.postgres_hook import PostgresHook
 import pandas as pd
 from datetime import datetime
 import os
-from jinja2 import Template
 
 
 #-----------------#
@@ -97,7 +96,6 @@ def read_data(path_data, file, done_data, schema, cursor, **context):
     for i in table_columns:
         if i[1] == 'date':
             column = i[0]
-            print(column) #
             df[column] = pd.to_datetime(df[column], dayfirst=True, errors='ignore')
 
     # получаем список первичных ключей из таблицы БД, удаляем дубликаты по первичным ключам

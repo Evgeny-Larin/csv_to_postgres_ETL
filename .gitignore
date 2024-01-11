@@ -1,4 +1,6 @@
 **/logs
+**/config
+**/plugins
 __pycache__
 .pyc
 airflow_example.cfg
