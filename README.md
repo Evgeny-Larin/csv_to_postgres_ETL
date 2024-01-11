@@ -20,7 +20,7 @@
 3.4 В таблицу логов записывается строка о результате записи данных в таблицу БД  
 4. **[etl_started]** В таблицу логов записывается строка об окончании ETL процесса  
 
-**Видеодемонстрация процесса::** [ссылка](https://drive.google.com/file/d/10DpndEC5icDB0mITDhGlHNfAgIwYZkeE/view?usp=sharing) 
+**Видеодемонстрация процесса:** [ссылка](https://drive.google.com/file/d/10DpndEC5icDB0mITDhGlHNfAgIwYZkeE/view?usp=sharing) 
 
 ## Примечания
 За основу взят оригинальный docker compose файл: [ссылка](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html)  
