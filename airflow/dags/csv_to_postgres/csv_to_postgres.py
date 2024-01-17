@@ -4,6 +4,7 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.hooks.postgres_hook import PostgresHook
+from airflow.providers.common.sql.sensors.sql import SqlSensor
 
 # прочие импорты
 import pandas as pd
@@ -159,6 +160,15 @@ dag = DAG(dag_id="csv_to_postgres",
 
 #-----------------#
 
+# сенсор, проверяющий подключение к БД
+check_conn = SqlSensor(
+    task_id='check_conn',
+    conn_id='postgres_conn',
+    sql='select 1',
+    mode='poke',
+    dag=dag
+)
+
 
 # таска, создающая схему ds и таблицы, если их нет
 create_tables_ds = PostgresOperator(
@@ -173,6 +183,14 @@ create_tables_logs = PostgresOperator(
     task_id='create_tables_logs',
     postgres_conn_id='postgres_conn',
     sql=r'sql/logs_create_tables_query.sql',
+    autocommit=True,
+    dag=dag) 
+
+# таска, создающая схему dm и таблицы, если их нет
+create_tables_dm = PostgresOperator(
+    task_id='create_tables_dm',
+    postgres_conn_id='postgres_conn',
+    sql=r'sql/dm_create_tables_query.sql',
     autocommit=True,
     dag=dag) 
 
@@ -228,6 +246,6 @@ logs_etl_ended = DummyOperator(
     trigger_rule='all_done') 
 
 
-[create_tables_ds, create_tables_logs] >> logs_etl_started >> extract_transform_tasks
+check_conn >> [create_tables_ds, create_tables_logs, create_tables_dm] >> logs_etl_started >> extract_transform_tasks
 
 load_tasks >> logs_etl_ended
