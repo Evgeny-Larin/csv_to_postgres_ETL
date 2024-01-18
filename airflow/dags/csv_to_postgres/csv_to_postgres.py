@@ -34,7 +34,6 @@ schema = 'ds'
 # схема для логов
 logs_schema = 'logs'
 logs_table = 'csv_to_postgres_dag'
-logs_record_query = r'sql/logs_record.sql'
 
 
 #-----------------#
@@ -194,7 +193,7 @@ create_tables_dm = PostgresOperator(
     autocommit=True,
     dag=dag) 
 
-
+# лог о начале etl процесса
 logs_etl_started = DummyOperator(
     task_id='etl_started',
     dag=dag,
@@ -238,7 +237,15 @@ for file in files:
     
     extract_transform_tasks[-1] >> load_tasks[-1]
 
-# записываем в логи конец дага
+# таска, вычисляющая и записывающая витрину dm_account_turnover_f
+dm_account_turnover = PostgresOperator(
+    task_id='dm_account_turnover',
+    postgres_conn_id='postgres_conn',
+    sql=r'sql/dm_insert_into_dm_account_turnover_f.sql',
+    autocommit=True,
+    dag=dag) 
+
+# лог об окончании etl процесса
 logs_etl_ended = DummyOperator(
     task_id='etl_ended',
     dag=dag,
@@ -248,4 +255,4 @@ logs_etl_ended = DummyOperator(
 
 check_conn >> [create_tables_ds, create_tables_logs, create_tables_dm] >> logs_etl_started >> extract_transform_tasks
 
-load_tasks >> logs_etl_ended
+load_tasks >> dm_account_turnover >> logs_etl_ended
