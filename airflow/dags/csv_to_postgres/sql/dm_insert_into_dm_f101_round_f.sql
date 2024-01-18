@@ -185,7 +185,10 @@ set
 	ir=EXCLUDED.ir, 
 	iv=EXCLUDED.iv, 
 	iitg=EXCLUDED.iitg, 
-	priz=EXCLUDED.priz;
+	priz=EXCLUDED.priz
+;
+
+drop view dm.vw_f101_result, dm.vw_in_bal, dm.vw_in_bal_and_turns, dm.vw_turn_deb_cre cascade;
 
 commit;
 
