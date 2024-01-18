@@ -245,6 +245,14 @@ dm_account_turnover = PostgresOperator(
     autocommit=True,
     dag=dag) 
 
+# таска, вычисляющая и записывающая витрину dm_f101_round_f
+dm_f101_round_f = PostgresOperator(
+    task_id='dm_f101_round_f',
+    postgres_conn_id='postgres_conn',
+    sql=r'sql/dm_insert_into_dm_f101_round_f.sql',
+    autocommit=True,
+    dag=dag) 
+
 # лог об окончании etl процесса
 logs_etl_ended = DummyOperator(
     task_id='etl_ended',
@@ -255,4 +263,4 @@ logs_etl_ended = DummyOperator(
 
 check_conn >> [create_tables_ds, create_tables_logs, create_tables_dm] >> logs_etl_started >> extract_transform_tasks
 
-load_tasks >> dm_account_turnover >> logs_etl_ended
+load_tasks >> dm_account_turnover >> dm_f101_round_f >> logs_etl_ended

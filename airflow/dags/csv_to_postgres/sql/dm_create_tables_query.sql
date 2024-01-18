@@ -34,5 +34,6 @@ create table if not exists
 		iv numeric(16),
 		iitg numeric(33,4),
 		dt date,
-		priz numeric(1)
+		priz numeric(1),
+		PRIMARY KEY(regn, num_sc, dt)
 );
