@@ -5,15 +5,15 @@ select *
 from
 (
 	select 
-		oper_date, mad.account_number,
-		sum(trun_deb) as deb_trun_rub,
-		sum(trun_deb)/1000 as deb_trun_th_rub,
-		sum(trun_cred) as cre_trun_rub,
-		sum(trun_cred)/1000 as cre_trun_th_rub
+		oper_date, acc.account_number,
+		round(sum(case when curr.code_iso_char = 'RUB' then trun_deb else trun_deb * exrate.reduced_cource end),2) as deb_trun_rub,
+		round(sum(case when curr.code_iso_char = 'RUB' then trun_deb else trun_deb * exrate.reduced_cource end)/1000,4) as deb_trun_th_rub,
+		round(sum(case when curr.code_iso_char = 'RUB' then trun_cred else trun_cred * exrate.reduced_cource end),2) as cre_trun_rub,
+		round(sum(case when curr.code_iso_char = 'RUB' then trun_cred else trun_cred * exrate.reduced_cource end)/1000,4) as cre_trun_th_rub
 	from (
 	
 				select 
-					oper_date, debet_account_rk as acc,
+					oper_date, debet_account_rk as account_rk,
 					sum(debet_amount) as trun_deb,
 					0 as trun_cred
 				from ds.ft_posting_f fpf 
@@ -22,7 +22,7 @@ from
 				union all
 				
 				select 
-					oper_date, credit_account_rk as acc, 
+					oper_date, credit_account_rk as account_rk, 
 					0 as trun_deb,
 					sum(credit_amount) as trun_cred
 				from ds.ft_posting_f fpf 
@@ -30,9 +30,13 @@ from
 				
 	) as cred_deb
 	
-	join ds.md_account_d mad 
-	on cred_deb.acc = mad.account_rk 
-	group by oper_date, mad.account_number
+	join ds.md_account_d acc 
+	on cred_deb.account_rk = acc.account_rk 
+	join ds.md_currency_d curr
+	on acc.currency_rk = curr.currency_rk 
+	left join ds.md_exchange_rate_d exrate
+	on acc.currency_rk = exrate.currency_rk and oper_date between exrate.data_actual_date and exrate.data_actual_end_date
+	group by oper_date, acc.account_number
 	order by oper_date
 ) as result_table
 
