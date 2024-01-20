@@ -5,11 +5,11 @@ create schema if not exists "dm";
 -- таблица оборотов
 create table if not exists 
 	dm.dm_account_turnover_f (
-		on_date date not null,
-		acct_num varchar(63) not null,
-		deb_trun_rub numeric,
+		on_date date,
+		acct_num char(63),
+		deb_trun_rub numeric(16),
 		deb_trun_th_rub numeric(33,4),
-		cre_trun_rub numeric,
+		cre_trun_rub numeric(16),
 		cre_trun_th_rub numeric(33,4),
 		PRIMARY KEY(on_date, acct_num)
 );
@@ -18,9 +18,9 @@ create table if not exists
 create table if not exists 
 	dm.dm_f101_round_f (
 		regn numeric(4),
-		plan varchar(1),
-		num_sc varchar(5),
-		a_p varchar(1),
+		plan char(1),
+		num_sc char(5),
+		a_p char(1),
 		vr numeric(16),
 		vv numeric(16),
 		vitg numeric(33,4),

@@ -150,8 +150,8 @@ def export_data(done_data, file, schema, pg_hook, **context):
 DEFAULT_ARGS = {'owner':'ELarin'}
 
 dag = DAG(dag_id="csv_to_postgres",
-          start_date=datetime(2024,1,1),
-          schedule_interval = '@once',
+          start_date=datetime(2018,1,10),
+          schedule_interval = '@daily',
           max_active_runs=1,
           default_args=DEFAULT_ARGS)
 
