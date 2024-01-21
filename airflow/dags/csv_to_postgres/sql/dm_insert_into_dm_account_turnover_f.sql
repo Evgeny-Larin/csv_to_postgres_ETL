@@ -9,10 +9,10 @@ from
 -- считаем сумму в рублях для иностранной валюты
 	select 
 		oper_date, acc.account_number,
-		round(sum(case when curr.code_iso_char = 'RUB' then trun_deb else trun_deb * exrate.reduced_cource end),2) as deb_trun_rub,
-		round(sum(case when curr.code_iso_char = 'RUB' then trun_deb else trun_deb * exrate.reduced_cource end)/1000,4) as deb_trun_th_rub,
-		round(sum(case when curr.code_iso_char = 'RUB' then trun_cred else trun_cred * exrate.reduced_cource end),2) as cre_trun_rub,
-		round(sum(case when curr.code_iso_char = 'RUB' then trun_cred else trun_cred * exrate.reduced_cource end)/1000,4) as cre_trun_th_rub
+		sum(case when curr.code_iso_char = 'RUB' then trun_deb else trun_deb * exrate.reduced_cource end) as deb_trun_rub,
+		sum(case when curr.code_iso_char = 'RUB' then trun_deb else trun_deb * exrate.reduced_cource end)/1000 as deb_trun_th_rub,
+		sum(case when curr.code_iso_char = 'RUB' then trun_cred else trun_cred * exrate.reduced_cource end) as cre_trun_rub,
+		sum(case when curr.code_iso_char = 'RUB' then trun_cred else trun_cred * exrate.reduced_cource end)/1000 as cre_trun_th_rub
 	from (
 	
 				-- получаем обороты по дебету и кредиту за день, предыдущий дню выполнения дага
