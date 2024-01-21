@@ -243,6 +243,7 @@ dm_account_turnover = PostgresOperator(
     postgres_conn_id='postgres_conn',
     sql=r'sql/dm_insert_into_dm_account_turnover_f.sql',
     autocommit=True,
+    on_success_callback=logs_callback,
     dag=dag) 
 
 # таска, вычисляющая и записывающая витрину dm_f101_round_f
@@ -251,6 +252,7 @@ dm_f101_round_f = PostgresOperator(
     postgres_conn_id='postgres_conn',
     sql=r'sql/dm_insert_into_dm_f101_round_f.sql',
     autocommit=True,
+    on_success_callback=logs_callback,
     dag=dag) 
 
 # лог об окончании etl процесса
