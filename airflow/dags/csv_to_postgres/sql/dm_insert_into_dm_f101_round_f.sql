@@ -200,7 +200,7 @@ select
 	'{{  ds  }}' as on_date,
 	acc.account_rk as account_rk,
 	acc.currency_rk as currency_rk,
-	case when curr.code_iso_char = 'RUB' then ir else iv*1000/exrate.reduced_cource end as balance_out
+	case when curr.code_iso_char = 'RUB' then ir*1000 else iv*1000/exrate.reduced_cource end as balance_out
 from vw_out_bal 
 join ds.md_account_d acc 
 on vw_out_bal.num_sc = acc.account_number 
