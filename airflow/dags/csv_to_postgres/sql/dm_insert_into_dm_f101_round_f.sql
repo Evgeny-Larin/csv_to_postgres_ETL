@@ -197,7 +197,7 @@ set
 insert into ds.ft_balance_f
 
 select 
-	'{{  yesterday_ds  }}' as on_date,
+	'{{  ds  }}' as on_date,
 	acc.account_rk as account_rk,
 	acc.currency_rk as currency_rk,
 	case when curr.code_iso_char = 'RUB' then ir else iv*1000/exrate.reduced_cource end as balance_out
@@ -207,7 +207,7 @@ on vw_out_bal.num_sc = acc.account_number
 left join ds.md_currency_d curr
 on acc.currency_rk = curr.currency_rk
 join ds.md_exchange_rate_d exrate
-on acc.currency_rk = exrate.currency_rk and '{{  yesterday_ds  }}' between exrate.data_actual_date and exrate.data_actual_end_date 
+on acc.currency_rk = exrate.currency_rk and '{{  ds  }}' between exrate.data_actual_date and exrate.data_actual_end_date 
 
 on conflict (on_date, account_rk) do update
 set 
