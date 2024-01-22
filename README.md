@@ -10,7 +10,7 @@
 7. Добавить Connection к БД Postgres с именем `postgres_conn`  
 
 ## Задание 1.1 [требования](https://github.com/Evgeny-Larin/csv_to_postgres_ETL/blob/main/project_objectives/objective_1.1.pdf)
-### Порядок работы csv_to_postgres DAG  
+### Решение  
 1. **[create_tables_ds, create_tables_logs]** В БД создаются схемы ds и logs, а также таблицы, если их нет    
 2. **[etl_started]** В таблицу логов записывается строка о начале ETL процесса  
 3. Для каждого файла в папке data/raw:  
@@ -21,6 +21,14 @@
 4. **[etl_started]** В таблицу логов записывается строка об окончании ETL процесса  
 
 **Видеодемонстрация процесса:** [ссылка](https://drive.google.com/file/d/10DpndEC5icDB0mITDhGlHNfAgIwYZkeE/view?usp=sharing) 
+
+## Задание 1.2 [требования](https://github.com/Evgeny-Larin/csv_to_postgres_ETL/blob/main/project_objectives/objective_1.2.pdf)
+### Решение
+1. **[create_tables_dm]** Создается схема dm и таблицы-витрины dm_account_turnover_f и dm_f101_round_f
+2. **[dm_account_turnover]** Рассчитывается витрина dm_account_turnover
+3. **[dm_f101_round_f]** Рассчитывается витрина dm_f101_round_f
+
+**Видеодемонстрация процесса:** [ссылка](https://drive.google.com/file/d/1wqge5w1zh3Lph4Y_4QBEpsBzuJIm9WO3/view?usp=sharing) 
 
 ## Примечания
 + Остановить и удалить контейнеры, volumes и загруженные образы: `docker compose down --volumes --remove-orphans --rmi all`  
