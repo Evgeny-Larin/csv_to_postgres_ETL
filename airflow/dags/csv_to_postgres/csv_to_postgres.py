@@ -13,7 +13,8 @@ import os
 
 
 #-----------------#
-
+# значения jinja templates
+yesterday_ds = '{{ yesterday_ds }}'
 
 # путь до файлов csv
 path_data = r'/opt/airflow/data/csv_to_postgres/raw'
@@ -59,13 +60,26 @@ def logs_callback(context):
     conn.close()
     
 
-
 # функция запросов к БД через курсор
 def sql_query(sql, cursor):
     cursor.execute(sql)
     rows = cursor.fetchall()
     cursor
     return rows
+
+
+# функция сохранения таблицы БД в csv
+# был бы пользователь суперюзер Postgres - COPY (SELECT * FROM table) TO 'path\to\file.csv' WITH CSV HEADER
+def sql_to_csv(path, schema, table,  yesterday_ds):
+    on_date = yesterday_ds
+    sql = f"""
+            select *
+            from {schema}.{table}
+            where dt = '{on_date}'
+          """
+    df_f101 = pd.read_sql(sql, conn)
+    df_f101.to_csv(f'{path}/{on_date}_{table}.csv', sep=';', index=False)
+
 
 # функция чтения csv и обработки файла 
 def read_data(path_data, file, done_data, schema, cursor, **context):
@@ -117,6 +131,7 @@ def read_data(path_data, file, done_data, schema, cursor, **context):
 
     df.to_csv(f'{done_data}/{file}.csv', sep=';', encoding='utf-8', index=False, header=False)
 
+
 # функция для загрузки в postgres готовых csv с хуком к 'postgres_conn', при конфликтах перезаписывается 
 def export_data(done_data, file, schema, pg_hook, **context):
     primary_keys = context['task_instance'].xcom_pull(key="primary_keys", task_ids=f"extr_{file}") # получаем список primary_keys
@@ -126,21 +141,22 @@ def export_data(done_data, file, schema, pg_hook, **context):
     primary_keys = ', '.join(primary_keys)
 
     sql = f"""
-            BEGIN;
-            CREATE TEMPORARY TABLE tmp_table 
-            (LIKE {schema}.{file} INCLUDING DEFAULTS)
-            ON COMMIT DROP;
+            begin;
+            create temporary table tmp_table 
+            (like {schema}.{file} including defaults)
+            on commit drop;
                 
-            COPY tmp_table FROM STDIN DELIMITER ';';
+            copy tmp_table from stdin delimiter ';';
                 
-            INSERT INTO {schema}.{file}
-            SELECT *
-            FROM tmp_table
-            ON CONFLICT ({primary_keys}) DO UPDATE
-            SET {update_set};
-            COMMIT;
+            insert into {schema}.{file}
+            select *
+            from tmp_table
+            on conflict ({primary_keys}) do update
+            set {update_set};
+            commit;
           """
     pg_hook.copy_expert(sql, f'{done_data}/{file}.csv')
+
 
 
 #-----------------#
@@ -255,6 +271,20 @@ dm_f101_round_f = PostgresOperator(
     on_success_callback=logs_callback,
     dag=dag) 
 
+# таска, сохраняющая отчёт 101 за прошлый опер день в csv
+to_csv_dm_f101_round_f = PythonOperator(
+    task_id='to_csv_dm_f101_round_f',
+    dag=dag,
+    provide_context=True,
+    python_callable=sql_to_csv,
+    op_kwargs={
+    'path':done_data,
+    'schema':'dm',
+    'table':'dm_f101_round_f',
+    'yesterday_ds':yesterday_ds},
+    on_success_callback=logs_callback
+)
+
 # лог об окончании etl процесса
 logs_etl_ended = DummyOperator(
     task_id='etl_ended',
@@ -265,4 +295,4 @@ logs_etl_ended = DummyOperator(
 
 check_conn >> [create_tables_ds, create_tables_logs, create_tables_dm] >> logs_etl_started >> extract_transform_tasks
 
-load_tasks >> dm_account_turnover >> dm_f101_round_f >> logs_etl_ended
+load_tasks >> dm_account_turnover >> dm_f101_round_f >> to_csv_dm_f101_round_f >> logs_etl_ended
