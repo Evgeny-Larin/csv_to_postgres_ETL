@@ -309,6 +309,8 @@ services:
       SPARK_WORKER_CORES: 2
       SPARK_WORKER_MEMORY: 1g
       SPARK_MASTER_URL: spark://spark-master:7077
+    ports:
+      - "9091:8081"
 
   spark-worker2:
     <<: *spark-common
@@ -321,6 +323,8 @@ services:
       SPARK_WORKER_CORES: 2
       SPARK_WORKER_MEMORY: 1g
       SPARK_MASTER_URL: spark://spark-master:7077
+    ports:
+      - "9092:8081"
 
   jupyter-pyspark:
     image: jupyter/pyspark-notebook:spark-3.2.1
@@ -365,7 +369,7 @@ services:
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
     ports:
-      - 9092:9090
+      - 9099:9090
     restart: always
 
   grafana:
