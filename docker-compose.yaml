@@ -64,6 +64,7 @@ x-airflow-common:
    - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
    - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+   - ${AIRFLOW_PROJ_DIR:-.}/spark_jobs:/opt/airflow/spark_jobs
    - ./data:/opt/airflow/data
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
@@ -271,6 +272,7 @@ services:
   # See: https://docs.docker.com/compose/profiles/
   flower:
     <<: *airflow-common
+    container_name: flower
     command: celery flower
     profiles:
       - flower
@@ -290,6 +292,7 @@ services:
 
   spark-master:
     <<: *spark-common
+    container_name: spark-master
     command: bin/spark-class org.apache.spark.deploy.master.Master
     ports:
       - "9090:8080"
@@ -297,6 +300,7 @@ services:
 
   spark-worker1:
     <<: *spark-common
+    container_name: spark-worker1
     command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     depends_on:
       - spark-master
@@ -308,6 +312,7 @@ services:
 
   spark-worker2:
     <<: *spark-common
+    container_name: spark-worker2
     command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     depends_on:
       - spark-master
@@ -318,7 +323,8 @@ services:
       SPARK_MASTER_URL: spark://spark-master:7077
 
   jupyter-pyspark:
-    image: jupyter/pyspark-notebook:spark-3.2.1 # pyspark
+    image: jupyter/pyspark-notebook:spark-3.2.1
+    container_name: jupyter_pyspark
     ports:
       - "8888:8888"
     volumes:
@@ -327,16 +333,17 @@ services:
 
   nginx:
     image: nginx:1.25.3
+    container_name: airflow_nginx
     volumes:
       - ./services/nginx:/etc/nginx/conf.d
     ports:
       - "8080:80"
     depends_on:
       - airflow-webserver
-    container_name: airflow_nginx
 
   statsd-exporter:
     image: prom/statsd-exporter:v0.25.0
+    container_name: statsd
     volumes:
       - ./services/statsd/statsd.yaml:/home/statsd-mapping-configs.yaml
     entrypoint: ["/bin/sh", "-c", "--"]
@@ -348,6 +355,7 @@ services:
 
   prometheus:
     image: prom/prometheus:v2.47.2
+    container_name: prometheus
     volumes:
       - ./services/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
       - prometheus_data:/prometheus
@@ -372,9 +380,6 @@ services:
     restart: always
     ports:
       - 3000:3000
-
-
-
 
 volumes:
   postgres-db-volume:
