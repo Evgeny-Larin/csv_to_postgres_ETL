@@ -1,14 +1,18 @@
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder.appName("PythonWordCount").getOrCreate()
+spark = SparkSession.builder.appName("my_test_spark").getOrCreate()
 
-text = "Hello Spark Hello Python Hello Airflow Hello Docker and Hello Spark"
+spark.sql('select 1').show()
 
-words = spark.sparkContext.parallelize(text.split(" "))
+# Получение конфигурации SparkSession
+conf = spark.sparkContext.getConf()
 
-wordCounts = words.map(lambda word: (word, 1)).reduceByKey(lambda a, b: a + b)
+# Вывод всех настроек
+all_settings = conf.getAll()
 
-for wc in wordCounts.collect():
-    print(wc[0], wc[1])
+print('start')
+# Вывод определенной настройки
+for setting in all_settings:
+    print(setting)
 
 spark.stop()

@@ -6,4 +6,3 @@ __pycache__
 airflow_example.cfg
 **/done/*.csv
 .ipynb_checkpoints
-**/test_dag
