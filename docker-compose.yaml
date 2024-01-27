@@ -329,15 +329,6 @@ services:
     ports:
       - "9092:9092"
 
-  jupyter-pyspark:
-    image: jupyter/pyspark-notebook:spark-3.2.1
-    container_name: jupyter_pyspark
-    ports:
-      - "8888:8888"
-    volumes:
-      - ${AIRFLOW_PROJ_DIR:-.}:/home/jovyan/work/
-    command: "start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''"
-
   nginx:
     image: nginx:1.25.3
     container_name: airflow_nginx
