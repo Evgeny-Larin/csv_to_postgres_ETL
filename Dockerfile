@@ -14,3 +14,4 @@ USER airflow
 RUN pip install --upgrade pip
 COPY ./requirements.txt /
 RUN pip install -r /requirements.txt
+RUN ssh-keygen -t ecdsa -b 521 -f /home/airflow/.ssh/id_ecdsa -N ''
