@@ -19,21 +19,14 @@ dag =  DAG("test_dag", # название дага
          schedule_interval = '@daily', # интервал выполнения
          default_args=DEFAULT_ARGS,
          max_active_runs = 1, # сколько процессов дага будет выполняться одновременно
-         tags=['usd_exrate_dag, usd']) # теги
+         )
 
 t2 = SparkSubmitOperator(
     task_id="spark_job",
-    conn_id="spark-conn",
+    conn_id="spark_conn",
     application="/opt/airflow/spark_jobs/test_spark_job.py",
     dag=dag
 )
 
-# t1 = BashOperator(
-#     task_id="spark_job2",
-#     bash_command="spark-submit --master spark://spark-master:7077 /opt/airflow/spark_jobs/test_spark_job.py",
-#     dag=dag
-# )
-
-# t1
 
 t2

@@ -34,7 +34,7 @@ x-airflow-common:
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
   build:
     context: .
-    dockerfile: Dockerfile
+    dockerfile: airflow.Dockerfile
   environment:
     &airflow-common-env
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -75,7 +75,9 @@ x-airflow-common:
 
 x-spark-common: 
   &spark-common
-  image: bitnami/spark:3.4.2
+  build:
+    context: .
+    dockerfile: spark.Dockerfile
   volumes:
   - ${AIRFLOW_PROJ_DIR:-.}/spark_jobs:/opt/bitnami/spark/jobs
 
