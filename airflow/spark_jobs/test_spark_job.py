@@ -1,24 +1,29 @@
 from pyspark.sql import SparkSession
-
-# Параметры подключения к PostgreSQL
-jdbc_url = "jdbc:postgresql://host:port/db"
-properties = {
-    "user": "user",
-    "password": "password",
-    "driver": "org.postgresql.Driver"
-}
+import sys
 
 # Создаем SparkSession
 spark = SparkSession.builder \
     .appName("PostgreSQL Connection") \
     .getOrCreate()
 
+# получаем аргументы [jdbc_url, user, password, driver]
+jdbc_url = sys.argv[1]
+properties = {
+    "user": sys.argv[2],
+    "password": sys.argv[3],
+    "driver": sys.argv[4]
+}
+
 # Чтение данных из PostgreSQL
-df = spark.read.jdbc(url=jdbc_url, table="ds.ft_balance_f", properties=properties)
+schema = 'ds'
+table = 'ft_balance_f'
+df = spark.read.jdbc(url=jdbc_url, 
+                     table=f'{schema}.{table}', 
+                     properties=properties)
 
-df.createOrReplaceTempView("ft_balance_f")
+df.createOrReplaceTempView(f"{table}")
 
-query = spark.sql("""select *  from ft_balance_f""")
+query = spark.sql(f"""select *  from {table}""")
 query.show()
 
 # query.write \
