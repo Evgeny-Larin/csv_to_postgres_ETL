@@ -37,3 +37,27 @@ create table if not exists
 		priz numeric(1),
 		PRIMARY KEY(regn, num_sc, dt)
 );
+
+
+-- таблица 101-й отчётной формы v2
+create table if not exists 
+	dm.dm_f101_round_f_v2 (
+		regn numeric(4),
+		plan char(1),
+		num_sc char(5),
+		a_p char(1),
+		vr numeric(16),
+		vv numeric(16),
+		vitg numeric(33,4),
+		ora numeric(16),
+		ova numeric(16),
+		oitga numeric(33,4),
+		orp numeric(16),
+		ovp numeric(16),
+		oitgp numeric(33,4),
+		ir numeric(16),
+		iv numeric(16),
+		iitg numeric(33,4),
+		dt date,
+		priz numeric(1)
+);

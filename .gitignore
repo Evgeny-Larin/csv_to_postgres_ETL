@@ -7,3 +7,5 @@ airflow_example.cfg
 **/done/*.csv
 .ipynb_checkpoints
 jars_pwds.txt
+**/test_dag
+**/spark_jobs

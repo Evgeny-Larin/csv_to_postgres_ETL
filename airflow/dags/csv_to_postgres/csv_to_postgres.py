@@ -26,8 +26,6 @@ done_data = r'/opt/airflow/data/csv_to_postgres/done'
 
 # подключение к postgres
 pg_hook = PostgresHook(postgres_conn_id='postgres_conn')
-conn = pg_hook.get_conn()
-cursor = conn.cursor()
 
 # схема для данных
 schema = 'ds'
@@ -61,28 +59,16 @@ def logs_callback(context):
     
 
 # функция запросов к БД через курсор
-def sql_query(sql, cursor):
+def sql_query(sql, pg_hook):
+    conn = pg_hook.get_conn()
+    cursor = conn.cursor()
     cursor.execute(sql)
     rows = cursor.fetchall()
-    cursor
+    conn.close()
     return rows
 
-
-# функция сохранения таблицы БД в csv
-# был бы пользователь суперюзер Postgres - COPY (SELECT * FROM table) TO 'path\to\file.csv' WITH CSV HEADER
-def sql_to_csv(path, schema, table,  yesterday_ds):
-    on_date = yesterday_ds
-    sql = f"""
-            select *
-            from {schema}.{table}
-            where dt = '{on_date}'
-          """
-    df_f101 = pd.read_sql(sql, conn)
-    df_f101.to_csv(f'{path}/{on_date}_{table}.csv', sep=';', index=False)
-
-
 # функция чтения csv и обработки файла 
-def read_data(path_data, file, done_data, schema, cursor, **context):
+def read_data(path_data, file, done_data, schema, pg_hook, **context):
     df = pd.read_csv(fr'{path_data}/{file}.csv', sep=';', encoding='cp866', index_col=0, dtype=str)
 
     # получаем список столбцов из таблицы БД
@@ -96,7 +82,7 @@ def read_data(path_data, file, done_data, schema, cursor, **context):
             table_name = '{file}'
         order by ordinal_position 
         """
-    table_columns = sql_query(sql, cursor)
+    table_columns = sql_query(sql, pg_hook)
 
     # в исходнике оставляем только те строки, которые мы ожидаем в таблице БД
     column_names = [row[0] for row in table_columns]
@@ -122,7 +108,7 @@ def read_data(path_data, file, done_data, schema, cursor, **context):
         where i.indrelid = '{schema}.{file}'::regclass
         and i.indisprimary;
         """
-    primary_keys = sql_query(sql, cursor)
+    primary_keys = sql_query(sql, pg_hook)
     primary_keys = [row[0] for row in primary_keys]
     df.drop_duplicates(primary_keys, inplace=True)
 
@@ -157,6 +143,23 @@ def export_data(done_data, file, schema, pg_hook, **context):
           """
     pg_hook.copy_expert(sql, f'{done_data}/{file}.csv')
 
+# функция сохранения таблицы БД в csv
+# был бы пользователь суперюзер Postgres - COPY (SELECT * FROM table) TO 'path\to\file.csv' WITH CSV HEADER
+def sql_to_csv(path, schema, table, pg_hook, yesterday_ds):
+    sql = f"""
+            select *
+            from {schema}.{table}
+            where dt = '{yesterday_ds}'
+          """
+    df_f101 = pd.read_sql(sql, con=pg_hook.get_conn())
+    # меняем значения в столбце regn
+    df_f101['regn'] = 2000
+    df_f101.to_csv(f'{path}/{yesterday_ds}_{table}.csv', sep=',', index=False)
+
+
+# функция сохранения csv в таблицу БД 
+def csv_v2_to_sql(pg_hook, path, schema, table, yesterday_ds):
+    pg_hook.copy_expert(f"copy {schema}.{table}_v2 from stdin delimiter ',' csv header", f'{path}/{yesterday_ds}_{table}.csv')
 
 
 #-----------------#
@@ -233,7 +236,7 @@ for file in files:
                                 'file':file,
                                 'done_data':done_data,
                                 'schema':schema,
-                                'cursor':cursor},
+                                'pg_hook':pg_hook},
                             on_failure_callback=logs_callback,
                             on_success_callback=logs_callback))
     
@@ -281,6 +284,22 @@ to_csv_dm_f101_round_f = PythonOperator(
     'path':done_data,
     'schema':'dm',
     'table':'dm_f101_round_f',
+    'pg_hook':pg_hook,
+    'yesterday_ds':yesterday_ds},
+    on_success_callback=logs_callback
+)
+
+# таска, записывающая отчёт 101 v2 за прошлый опер день в БД
+to_sql_dm_f101_round_f_v2 = PythonOperator(
+    task_id='to_sql_dm_f101_round_f_v2',
+    dag=dag,
+    provide_context=True,
+    python_callable=csv_v2_to_sql,
+    op_kwargs={
+    'pg_hook':pg_hook,
+    'path':done_data,
+    'schema':'dm',
+    'table':'dm_f101_round_f',
     'yesterday_ds':yesterday_ds},
     on_success_callback=logs_callback
 )
@@ -295,4 +314,4 @@ logs_etl_ended = DummyOperator(
 
 check_conn >> [create_tables_ds, create_tables_logs, create_tables_dm] >> logs_etl_started >> extract_transform_tasks
 
-load_tasks >> dm_account_turnover >> dm_f101_round_f >> to_csv_dm_f101_round_f >> logs_etl_ended
+load_tasks >> dm_account_turnover >> dm_f101_round_f >> to_csv_dm_f101_round_f >> to_sql_dm_f101_round_f_v2 >> logs_etl_ended
