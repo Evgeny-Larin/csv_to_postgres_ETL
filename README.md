@@ -30,6 +30,13 @@
 
 **Видеодемонстрация процесса:** [ссылка](https://drive.google.com/file/d/1wqge5w1zh3Lph4Y_4QBEpsBzuJIm9WO3/view?usp=sharing) 
 
+## Задание 1.3 [требования](https://github.com/Evgeny-Larin/csv_to_postgres_ETL/blob/main/project_objectives/objective_1.3.pdf)
+### Решение
+1. **[to_csv_dm_f101_round_f]** Выгружаются данные из витрины dm_f101_round_f, изменяется столбец regn и данные сохраняются в csv файл
+2. **[to_sql_dm_f101_round_f_v2]** Данные из csv файла загружаются в таблицу-копию dm_f101_round_f_v2  
+
+**Видеодемонстрация процесса:** [ссылка](https://drive.google.com/file/d/1OPMg_T94gRhAch3qH6kzSEIuf4sZdXCj/view?usp=sharing) 
+
 ## Примечания
 + Остановить и удалить контейнеры, volumes и загруженные образы: `docker compose down --volumes --remove-orphans --rmi all`  
 + За основу взят оригинальный docker compose файл: [ссылка](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html)  
