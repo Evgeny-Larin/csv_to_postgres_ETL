@@ -47,7 +47,9 @@
    ```  
 
    Для запуска с помощью spark-submit:  
-   ```spark-submit /path/to/spark_task_2.1.py```
+   ```bash
+   spark-submit /path/to/spark_task_2.1.py
+   ```
 
 **Видеодемонстрация процесса:** [ссылка](https://drive.google.com/file/d/1peZz7aCjp1MSc0rijdtf5cnRHWfpFsKU/view?usp=sharing) 
 
