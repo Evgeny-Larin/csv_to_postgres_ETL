@@ -37,7 +37,7 @@
 
 **Видеодемонстрация процесса:** [ссылка](https://drive.google.com/file/d/1OPMg_T94gRhAch3qH6kzSEIuf4sZdXCj/view?usp=sharing) 
 
-## Задание 2.2 [требования]()
+## Задание 2.2 [требования](https://github.com/Evgeny-Larin/csv_to_postgres_ETL/blob/main/project_objectives/objective_2.2.pdf)
 ### Решение
 1. Устанавливаем Spark
 2. Для запуска с помощью pyspark:  
