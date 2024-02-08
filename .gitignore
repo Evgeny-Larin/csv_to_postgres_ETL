@@ -8,4 +8,4 @@ airflow_example.cfg
 .ipynb_checkpoints
 jars_pwds.txt
 **/test_dag
-**/spark_jobs
+**/spark_jobs/spark_sql_to_csv.py

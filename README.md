@@ -37,6 +37,21 @@
 
 **Видеодемонстрация процесса:** [ссылка](https://drive.google.com/file/d/1OPMg_T94gRhAch3qH6kzSEIuf4sZdXCj/view?usp=sharing) 
 
+## Задание 2.2 [требования]()
+### Решение
+1. Устанавливаем Spark
+2. Для запуска с помощью pyspark:  
+   ```bash
+   pyspark
+   exec(open(r"/path/to/spark_task_2.1.py").read())
+   ```  
+
+   Для запуска с помощью spark-submit:
+   `spark-submit /path/to/spark_task_2.1.py`
+
+**Видеодемонстрация процесса:** [ссылка](https://drive.google.com/file/d/1peZz7aCjp1MSc0rijdtf5cnRHWfpFsKU/view?usp=sharing) 
+
+
 ## Примечания
 + Остановить и удалить контейнеры, volumes и загруженные образы: `docker compose down --volumes --remove-orphans --rmi all`  
 + За основу взят оригинальный docker compose файл: [ссылка](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html)  
